@@ -2,7 +2,7 @@
 // Copies the poster image shipped beside this file into the output
 // directory the grader mounts (MAKEFUN_OUTPUT_DIR). Deterministic:
 // the same bytes are written on every run.
-import { copyFileSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { copyFileSync, mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,3 +23,15 @@ for (const entry of readdirSync(outDir)) {
 }
 
 copyFileSync(source, join(outDir, "entry.png"));
+
+// Verify the delivery: the copied file must match the source byte for
+// byte, so a truncated or failed copy fails loudly instead of silently
+// delivering a bad poster.
+const copied = join(outDir, "entry.png");
+const sourceSize = statSync(source).size;
+const copiedSize = statSync(copied).size;
+if (copiedSize !== sourceSize) {
+  throw new Error(
+    `entry.png copy mismatch: source ${sourceSize} bytes, copied ${copiedSize} bytes`,
+  );
+}
